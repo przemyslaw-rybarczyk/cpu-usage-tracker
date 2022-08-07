@@ -2,7 +2,7 @@
 
 #include "types.h"
 
-struct Usage {
+struct CPUTime {
     uint64_t user;
     uint64_t nice;
     uint64_t system;
@@ -15,5 +15,5 @@ struct Usage {
     uint64_t guest_nice;
 };
 
-struct Usage *parse_cpu_usage(struct String str, uint64_t num_cores);
-double *get_cpu_usage_percent(struct Usage *prev_usage, struct Usage *usage, uint64_t num_cores);
+struct CPUTime *parse_cpu_time(struct String str, uint64_t num_cores);
+double *get_cpu_usage(struct CPUTime *prev_cpu_time, struct CPUTime *cpu_time, uint64_t num_cores);
