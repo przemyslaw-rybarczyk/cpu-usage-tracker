@@ -6,4 +6,4 @@
 
 #include "types.h"
 
-struct String read_file(FILE *file);
+struct String *read_file(FILE *file);

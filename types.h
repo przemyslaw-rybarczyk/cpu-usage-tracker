@@ -6,5 +6,5 @@
 
 struct String {
     size_t len;
-    uint8_t *data;
+    uint8_t data[];
 };

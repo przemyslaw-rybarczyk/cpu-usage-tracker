@@ -5,8 +5,8 @@
 #include "printer.h"
 
 static struct CPUTime *read_cpu_time(FILE *file, uint64_t num_cores) {
-    struct String str = read_file(file);
-    if (str.data == NULL)
+    struct String *str = read_file(file);
+    if (str == NULL)
         return NULL;
     return parse_cpu_time(str, num_cores);
 }
