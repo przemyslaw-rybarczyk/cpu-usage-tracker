@@ -5,6 +5,7 @@
 // Reads the entire contents of a file in a single read.
 // Returns {0, NULL} on error.
 struct String read_file(FILE *file) {
+    fseek(file, 0, SEEK_SET);
     size_t buffer_size = BUFFER_SIZE_INIT;
     uint8_t *buffer = malloc(buffer_size);
     if (buffer == NULL)
