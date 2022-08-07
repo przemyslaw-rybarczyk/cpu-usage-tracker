@@ -16,3 +16,4 @@ struct Usage {
 };
 
 struct Usage *parse_cpu_usage(struct String str, uint64_t num_cores);
+double *get_cpu_usage_percent(struct Usage *prev_usage, struct Usage *usage, uint64_t num_cores);

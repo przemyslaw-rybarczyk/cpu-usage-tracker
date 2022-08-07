@@ -58,3 +58,29 @@ struct Usage *parse_cpu_usage(struct String str, uint64_t num_cores) {
     }
     return usage;
 }
+
+static uint64_t get_cpu_idle_usage(struct Usage *usage) {
+    return usage->idle + usage->iowait;
+}
+
+static uint64_t get_cpu_nonidle_usage(struct Usage *usage) {
+    return usage->user + usage->nice + usage->system + usage->irq + usage->softirq + usage->steal;
+}
+
+// Calculates the usage for each core based on the current and previous Usage values.
+// Return an array of doubles of length num_cores.
+double *get_cpu_usage_percent(struct Usage *prev_usage, struct Usage *usage, uint64_t num_cores) {
+    double *usage_percent = malloc(num_cores * sizeof(double));
+    if (usage_percent == NULL)
+        return NULL;
+    for (uint64_t i = 0; i < num_cores; i++) {
+        uint64_t prev_idle = get_cpu_idle_usage(&prev_usage[i]);
+        uint64_t idle = get_cpu_idle_usage(&usage[i]);
+        uint64_t prev_nonidle = get_cpu_nonidle_usage(&prev_usage[i]);
+        uint64_t nonidle = get_cpu_nonidle_usage(&usage[i]);
+        uint64_t prev_total = prev_idle + prev_nonidle;
+        uint64_t total = idle + nonidle;
+        usage_percent[i] = 100.0 * (double)(nonidle - prev_nonidle) / (double)(total - prev_total);
+    }
+    return usage_percent;
+}
