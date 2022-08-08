@@ -34,15 +34,18 @@ static void *analyzer_main(void *arg) {
     struct CPUTime *prev_cpu_time = parse_cpu_time(str, num_cores);
     if (prev_cpu_time == NULL)
         return NULL;
+    free(str);
     while (1) {
         struct String *str = (struct String *)buffer_pop(raw_data_buffer);
         struct CPUTime *cpu_time = parse_cpu_time(str, num_cores);
+        free(str);
         if (cpu_time == NULL)
             return NULL;
         double *usage = get_cpu_usage(prev_cpu_time, cpu_time, num_cores);
         if (usage == NULL)
             return NULL;
         buffer_push(core_usage_buffer, (void *)usage);
+        free(prev_cpu_time);
         prev_cpu_time = cpu_time;
     }
 }
@@ -51,6 +54,7 @@ static void *printer_main(void *arg) {
     while (1) {
         double *usage = (double *)buffer_pop(core_usage_buffer);
         print_cpu_usage(usage, num_cores);
+        free(usage);
     }
 }
 
@@ -66,6 +70,7 @@ int main() {
     if (str == NULL)
         return 1;
     num_cores = get_num_cpu_cores(str);
+    free(str);
     int reader_create_err = pthread_create(&reader_thread, NULL, reader_main, (void *)file);
     if (reader_create_err != 0) {
         fprintf(stderr, "Error: failed to create thread\n");
