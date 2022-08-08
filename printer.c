@@ -12,10 +12,12 @@ void print_cpu_usage(double *usage, uint64_t num_cores) {
         uint32_t full_segments = (uint32_t)(usage[i] / 100.0 * BAR_WIDTH);
         for (uint32_t j = 0; j < full_segments; j++)
             printf("█");
-        uint32_t partial_segment_i = (uint32_t)(usage[i] / 100.0 * BAR_WIDTH * 8) % 8;
-        printf("%s", partial_segments[partial_segment_i]);
-        for (uint32_t j = 0; j < BAR_WIDTH - full_segments - 1; j++)
-            printf(" ");
+        if (full_segments < BAR_WIDTH) {
+            uint32_t partial_segment_i = (uint32_t)(usage[i] / 100.0 * BAR_WIDTH * 8) % 8;
+            printf("%s", partial_segments[partial_segment_i]);
+            for (uint32_t j = 0; j < BAR_WIDTH - full_segments - 1; j++)
+                printf(" ");
+        }
         printf("]\n");
     }
     printf("\n");
