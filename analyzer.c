@@ -22,6 +22,27 @@ static uint64_t read_number(struct String *str, size_t *i, bool *err) {
 }
 
 // Parses the string str containing data from /proc/stat.
+// Returns the number of CPU cores.
+uint64_t get_num_cpu_cores(struct String *str) {
+    uint64_t num_cores = 0;
+    for (size_t i = 0; i < str->len; i++) {
+        // Check if line starts with "cpu"
+        if (i <= str->len - 3 && memcmp(str->data + i, "cpu", 3) == 0) {
+            i += 3;
+            // Get cpu number and values
+            bool err = false;
+            uint64_t core_i = read_number(str, &i, &err);
+            if (!err && core_i >= num_cores)
+                num_cores = core_i + 1;
+        }
+        // Skip rest of line
+        for (; i < str->len && str->data[i] != '\n'; i++)
+            ;
+    }
+    return num_cores;
+}
+
+// Parses the string str containing data from /proc/stat.
 // Returns an arrays of CPU core time data for each of the num_cores cores.
 struct CPUTime *parse_cpu_time(struct String *str, uint64_t num_cores) {
     struct CPUTime *cpu_time = malloc(num_cores * sizeof(struct CPUTime));

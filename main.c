@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
 
@@ -10,7 +11,7 @@
 #define RAW_DATA_BUFFER_CAPACITY 8
 #define CORE_USAGE_BUFFER_CAPACITY 8
 
-static uint64_t num_cores = 4;
+static uint64_t num_cores;
 static struct Buffer *raw_data_buffer;
 static struct Buffer *core_usage_buffer;
 static pthread_t reader_thread;
@@ -18,9 +19,7 @@ static pthread_t analyzer_thread;
 static pthread_t printer_thread;
 
 static void *reader_main(void *arg) {
-    FILE *file = fopen("/proc/stat", "r");
-    if (file == NULL)
-        return NULL;
+    FILE *file = (FILE *)arg;
     while (1) {
         struct String *str = read_file(file);
         if (str == NULL)
@@ -58,7 +57,16 @@ static void *printer_main(void *arg) {
 int main() {
     raw_data_buffer = buffer_new(RAW_DATA_BUFFER_CAPACITY);
     core_usage_buffer = buffer_new(CORE_USAGE_BUFFER_CAPACITY);
-    int reader_create_err = pthread_create(&reader_thread, NULL, reader_main, NULL);
+    FILE *file = fopen("/proc/stat", "r");
+    if (file == NULL) {
+        fprintf(stderr, "Error: failed to open /proc/stat\n");
+        return errno;
+    }
+    struct String *str = read_file(file);
+    if (str == NULL)
+        return 1;
+    num_cores = get_num_cpu_cores(str);
+    int reader_create_err = pthread_create(&reader_thread, NULL, reader_main, (void *)file);
     if (reader_create_err != 0) {
         fprintf(stderr, "Error: failed to create thread\n");
         return reader_create_err;

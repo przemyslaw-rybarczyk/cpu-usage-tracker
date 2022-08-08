@@ -15,5 +15,6 @@ struct CPUTime {
     uint64_t guest_nice;
 };
 
+uint64_t get_num_cpu_cores(struct String *str);
 struct CPUTime *parse_cpu_time(struct String *str, uint64_t num_cores);
 double *get_cpu_usage(struct CPUTime *prev_cpu_time, struct CPUTime *cpu_time, uint64_t num_cores);
