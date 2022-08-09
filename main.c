@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "reader.h"
 #include "analyzer.h"
