@@ -7,6 +7,11 @@
 // Skips any spaces following the number.
 // If the number is invalid, sets err to true.
 static uint64_t read_number(struct String *str, size_t *i, bool *err) {
+    // If the first character is not a digit, avoid parsing it as zero
+    if (!('0' <= str->data[*i] && str->data[*i] <= '9')) {
+        *err = true;
+        return 0;
+    }
     uint64_t n = 0;
     for (; *i < str->len && str->data[*i] != ' ' && str->data[*i] != '\n'; (*i)++) {
         uint8_t c = str->data[*i];
