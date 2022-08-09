@@ -3,7 +3,7 @@ ifeq ($(CC),)
 CC = clang
 endif
 ifeq ($(CFLAGS),)
-CFLAGS = -O2 -Weverything
+CFLAGS = -O2 -Weverything -Wno-atomic-implicit-seq-cst
 endif
 TEST_TARGET = cut-test
 
