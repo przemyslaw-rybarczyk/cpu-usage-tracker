@@ -2,11 +2,11 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
-#include <time.h>
 
 #include "reader.h"
 #include "analyzer.h"
 #include "printer.h"
+#include "logger.h"
 #include "buffer.h"
 
 #define RAW_DATA_BUFFER_CAPACITY 8
@@ -17,24 +17,11 @@ static uint64_t num_cores;
 
 static struct Buffer *raw_data_buffer;
 static struct Buffer *core_usage_buffer;
-static struct Buffer *log_buffer;
 
 static pthread_t reader_thread;
 static pthread_t analyzer_thread;
 static pthread_t printer_thread;
 static pthread_t logger_thread;
-
-struct LogMsg {
-    time_t time;
-    const char *text;
-};
-
-static void log_msg(const char *text) {
-    struct LogMsg *msg = malloc(sizeof(struct LogMsg));
-    msg->time = time(NULL);
-    msg->text = text;
-    buffer_push(log_buffer, (void *)msg);
-}
 
 static void *reader_main(void *arg) {
     FILE *file = (FILE *)arg;
@@ -90,21 +77,6 @@ static void *printer_main(void *arg) {
         log_msg("Printer: displaying usage");
         print_cpu_usage(usage, num_cores);
         free(usage);
-    }
-}
-
-static char time_str[9];
-
-static void *logger_main(void *arg) {
-    FILE *log_file = fopen("log", "w");
-    if (log_file == 0)
-        return NULL;
-    while (1) {
-        struct LogMsg *msg = (struct LogMsg *)buffer_pop(log_buffer);
-        strftime(time_str, sizeof(time_str), "%T", localtime(&msg->time));
-        fprintf(log_file, "%s - %s\n", time_str, msg->text);
-        fflush(log_file);
-        free(msg);
     }
 }
 
