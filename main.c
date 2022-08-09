@@ -118,6 +118,10 @@ int main() {
     raw_data_buffer = buffer_new(RAW_DATA_BUFFER_CAPACITY);
     core_usage_buffer = buffer_new(CORE_USAGE_BUFFER_CAPACITY);
     log_buffer = buffer_new(LOG_BUFFER_CAPACITY);
+    if (raw_data_buffer == NULL || core_usage_buffer == NULL || log_buffer == NULL) {
+        fprintf(stderr, "Error: failed to create buffer\n");
+        return 1;
+    }
     FILE *file = fopen("/proc/stat", "r");
     if (file == NULL) {
         fprintf(stderr, "Error: failed to open /proc/stat\n");
