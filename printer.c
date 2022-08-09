@@ -4,7 +4,7 @@
 
 #define BAR_WIDTH 60
 
-const char *partial_segments[8] = {" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉"};
+static const char *partial_segments[8] = {" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉"};
 
 void print_cpu_usage(double *usage, uint64_t num_cores) {
     for (uint64_t i = 0; i < num_cores; i++) {
