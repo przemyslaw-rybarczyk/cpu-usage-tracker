@@ -57,7 +57,7 @@ static struct CPUTime *analyzer_get_cpu_time(void) {
     return cpu_time;
 }
 
-static void *analyzer_main(void *arg) {
+static void *analyzer_main(__attribute__((unused)) void *arg) {
     struct CPUTime *prev_cpu_time = analyzer_get_cpu_time();
     if (prev_cpu_time == NULL)
         return NULL;
@@ -78,7 +78,7 @@ static void *analyzer_main(void *arg) {
     }
 }
 
-static void *printer_main(void *arg) {
+static void *printer_main(__attribute__((unused)) void *arg) {
     while (1) {
         printer_alive = true;
         log_msg("Printer: getting usage");
@@ -89,7 +89,7 @@ static void *printer_main(void *arg) {
     }
 }
 
-static void *watchdog_main(void *arg) {
+static void *watchdog_main(__attribute__((unused)) void *arg) {
     while (1) {
         sleep(2);
         log_msg("Watchdog: running check");

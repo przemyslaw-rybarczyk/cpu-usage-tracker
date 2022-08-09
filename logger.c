@@ -21,7 +21,7 @@ void log_msg(const char *text) {
 
 static char time_str[9];
 
-void *logger_main(void *arg) {
+void *logger_main(__attribute__((unused)) void *arg) {
     FILE *log_file = fopen("log", "w");
     if (log_file == 0)
         return NULL;
