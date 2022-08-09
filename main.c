@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "reader.h"
 #include "analyzer.h"
@@ -10,40 +11,72 @@
 
 #define RAW_DATA_BUFFER_CAPACITY 8
 #define CORE_USAGE_BUFFER_CAPACITY 8
+#define LOG_BUFFER_CAPACITY 64
 
 static uint64_t num_cores;
+
 static struct Buffer *raw_data_buffer;
 static struct Buffer *core_usage_buffer;
+static struct Buffer *log_buffer;
+
 static pthread_t reader_thread;
 static pthread_t analyzer_thread;
 static pthread_t printer_thread;
+static pthread_t logger_thread;
+
+struct LogMsg {
+    time_t time;
+    const char *text;
+};
+
+static void log_msg(const char *text) {
+    struct LogMsg *msg = malloc(sizeof(struct LogMsg));
+    msg->time = time(NULL);
+    msg->text = text;
+    buffer_push(log_buffer, (void *)msg);
+}
 
 static void *reader_main(void *arg) {
     FILE *file = (FILE *)arg;
     while (1) {
+        log_msg("Reader: reading /proc/stat");
         struct String *str = read_file(file);
-        if (str == NULL)
+        if (str == NULL) {
+            log_msg("Reader: read failed");
             return NULL;
+        }
+        log_msg("Reader: sending file contents");
         buffer_push(raw_data_buffer, (void *)str);
+        log_msg("Reader: sleeping");
         sleep(1);
     }
 }
 
-static void *analyzer_main(void *arg) {
+static struct CPUTime *analyzer_get_cpu_time(void) {
+    log_msg("Analyzer: getting file contents");
     struct String *str = (struct String *)buffer_pop(raw_data_buffer);
-    struct CPUTime *prev_cpu_time = parse_cpu_time(str, num_cores);
+    log_msg("Analyzer: parsing /proc/stat");
+    struct CPUTime *cpu_time = parse_cpu_time(str, num_cores);
+    free(str);
+    if (cpu_time == NULL)
+        log_msg("Analyzer: failed to parse /proc/stat");
+    return cpu_time;
+}
+
+static void *analyzer_main(void *arg) {
+    struct CPUTime *prev_cpu_time = analyzer_get_cpu_time();
     if (prev_cpu_time == NULL)
         return NULL;
-    free(str);
     while (1) {
-        struct String *str = (struct String *)buffer_pop(raw_data_buffer);
-        struct CPUTime *cpu_time = parse_cpu_time(str, num_cores);
-        free(str);
+        struct CPUTime *cpu_time = analyzer_get_cpu_time();
         if (cpu_time == NULL)
             return NULL;
         double *usage = get_cpu_usage(prev_cpu_time, cpu_time, num_cores);
-        if (usage == NULL)
+        if (usage == NULL) {
+            log_msg("Analyzer: get_cpu_usage() failed");
             return NULL;
+        }
+        log_msg("Analyzer: sending CPU usage");
         buffer_push(core_usage_buffer, (void *)usage);
         free(prev_cpu_time);
         prev_cpu_time = cpu_time;
@@ -52,15 +85,33 @@ static void *analyzer_main(void *arg) {
 
 static void *printer_main(void *arg) {
     while (1) {
+        log_msg("Printer: getting usage");
         double *usage = (double *)buffer_pop(core_usage_buffer);
+        log_msg("Printer: displaying usage");
         print_cpu_usage(usage, num_cores);
         free(usage);
+    }
+}
+
+static char time_str[9];
+
+static void *logger_main(void *arg) {
+    FILE *log_file = fopen("log", "w");
+    if (log_file == 0)
+        return NULL;
+    while (1) {
+        struct LogMsg *msg = (struct LogMsg *)buffer_pop(log_buffer);
+        strftime(time_str, sizeof(time_str), "%T", localtime(&msg->time));
+        fprintf(log_file, "%s - %s\n", time_str, msg->text);
+        fflush(log_file);
+        free(msg);
     }
 }
 
 int main() {
     raw_data_buffer = buffer_new(RAW_DATA_BUFFER_CAPACITY);
     core_usage_buffer = buffer_new(CORE_USAGE_BUFFER_CAPACITY);
+    log_buffer = buffer_new(LOG_BUFFER_CAPACITY);
     FILE *file = fopen("/proc/stat", "r");
     if (file == NULL) {
         fprintf(stderr, "Error: failed to open /proc/stat\n");
@@ -72,19 +123,13 @@ int main() {
     num_cores = get_num_cpu_cores(str);
     free(str);
     int reader_create_err = pthread_create(&reader_thread, NULL, reader_main, (void *)file);
-    if (reader_create_err != 0) {
-        fprintf(stderr, "Error: failed to create thread\n");
-        return reader_create_err;
-    }
     int analyzer_create_err = pthread_create(&analyzer_thread, NULL, analyzer_main, NULL);
-    if (analyzer_create_err != 0) {
-        fprintf(stderr, "Error: failed to create thread\n");
-        return analyzer_create_err;
-    }
     int printer_create_err = pthread_create(&printer_thread, NULL, printer_main, NULL);
-    if (printer_create_err != 0) {
+    int logger_create_err = pthread_create(&logger_thread, NULL, logger_main, NULL);
+    if (reader_create_err != 0 || analyzer_create_err != 0 || printer_create_err != 0 || logger_create_err != 0) {
         fprintf(stderr, "Error: failed to create thread\n");
         return printer_create_err;
     }
+    log_msg("Main thread: Program initialization finished");
     pthread_exit(NULL);
 }
