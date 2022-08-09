@@ -5,12 +5,21 @@ endif
 ifeq ($(CFLAGS),)
 CFLAGS = -O2 -Weverything
 endif
+TEST_TARGET = cut-test
 
 HEADERS = $(wildcard *.h)
 OBJECTS = $(patsubst %.c,%.o,$(wildcard *.c))
 
+.PHONY: test
+
 $(TARGET): $(OBJECTS)
-	$(CC) $(CFLAGS) $(OBJECTS) -o $@
+	$(CC) $(CFLAGS) $(filter-out test.o,$(OBJECTS)) -o $@
 
 %.o: %.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $< -o $@
+
+$(TEST_TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) $(filter-out main.o,$(OBJECTS)) -o $(TEST_TARGET)
+
+test: $(TEST_TARGET)
+	./$(TEST_TARGET)
